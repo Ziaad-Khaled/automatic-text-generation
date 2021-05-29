@@ -1,0 +1,178 @@
+import DataFile
+import Data.List
+
+
+remove1 _ [] = []
+remove1 x (y:ys) |  x == y    = remove1 x ys
+                 |  otherwise = y : remove1 x ys
+
+
+--freq:: (Ord a) => [a] -> [(a, Int)]
+freq []      = []
+freq (x: xs) = ins x (freq xs)
+ 
+--ins :: (Ord a) => a -> [(a, Int)] -> [(a, Int)]
+ins x ((k, v): s) | x == k = (k, v + 1): s 
+ins x ((k, v): s) | x <  k = (x, 1): (k, v): s       
+ins x ((k, v): s) = (k, v): ins x s             
+ins x [] = (x, 1): []   
+
+
+member x [] = False
+member x (y:ys) = if(x==y) then True
+				  else member x ys
+				  
+wordSplit [] = []
+wordSplit [x]=[x]
+wordSplit (x:y:xs) |x == ' '  = ""
+				   |member y punct = [x]
+				   |member x punct = [x]
+				   |otherwise = x:wordSplit (y:xs)
+
+wordSplit2 "" = ""
+wordSplit2 [x]=""
+wordSplit2 (x:y:xs) | x == ' ' = (y:xs)
+				  |member x punct = (y:xs)
+				  |member y punct = (y:xs)
+				  | otherwise = wordSplit2 (y:xs)
+			
+empty [] = True
+empty [x] = False
+empty (x:xs)=False
+
+------------------------------------------------------------------
+
+--function #1
+wordToken :: [Char] -> [[Char]]
+wordToken "" = []
+wordToken s   |empty (wordSplit s) = [wordSplit l] ++ wordToken (wordSplit2 l) 
+			  |empty (wordSplit l) = [wordSplit s]  ++ wordToken (wordSplit2 l)
+			  |empty (wordSplit s) && empty (wordSplit l) = wordToken (wordSplit2 l)
+			  |otherwise = ([wordSplit s] ++ [wordSplit l]) ++ wordToken (wordSplit2 l) where l = wordSplit2 s
+------------------------------------------------------------------
+
+--function #2
+wordTokenList :: [String] -> [String]
+wordTokenList [] = []
+wordTokenList (x:xs) = wordToken x ++ wordTokenList xs
+
+-------------------------------------------------------------------
+
+
+
+
+uniqueBigrams1 (x:[]) = []
+uniqueBigrams1 (x:y:xs) = (x,y):uniqueBigrams (y:xs)
+
+uniqueTrigrams1 (x:y:[]) = []
+uniqueTrigrams1 (x:y:z:xs) = (x,y,z):uniqueTrigrams1 (y:z:xs)
+--pairs :: [a] -> [(a, a)]
+--pairs l =  [(x,y) | (x:ys) <- tails (reverse l), y <- (tail ys)] 
+--pairs l = [(x,y) | (x:ys) <- tails (reverse l), y <- (tail(tail ys))]
+
+------------------------------------------------------------------
+
+--function #3
+uniqueBigrams :: [String] -> [(String,String)]
+uniqueBigramsH [x] = []
+uniqueBigramsH (x:y:xs)= (x,y):uniqueBigramsH (y:xs)
+
+
+uniqueBigrams [] = []
+uniqueBigrams l = removePresentTwice (uniqueBigramsH l)
+
+------------------------------------------------------------------
+remDup [] = []
+remDup (x:xs) = x:(remDup (remove1 x xs))
+
+remove x [] = []
+remove x (y:ys) = if x==y then ys
+						  else y:(remove x ys)
+						  
+removePresentTwice [] = []
+removePresentTwice (x:xs) = if (member x xs) then removePresentTwice (x:(remove x xs))
+											 else x:(removePresentTwice xs)
+											 
+uniqueTrigramsH [x,y] = []
+uniqueTrigramsH (x:y:z:xs)= (x,y,z):uniqueTrigramsH (y:z:xs)
+------------------------------------------------------------------
+--function #4
+uniqueTrigrams :: [String] -> [(String,String,String)]
+uniqueTrigrams [] = []
+uniqueTrigrams l = removePresentTwice (uniqueTrigramsH l)
+
+------------------------------------------------------------------
+--function #5
+bigramsFreq :: Num a => [String] -> [((String,String),a)]
+bigramsFreq [] = []
+bigramsFreq (x:xs) = freq (uniqueBigrams1 (x:xs)) 
+
+------------------------------------------------------------------
+--function #6
+trigramsFreq:: Num a => [String] -> [((String,String,String),a)]
+trigramsFreq [] =[]
+trigramsFreq (x:y:z:xs)  = freq (uniqueTrigrams1 (x:y:z:xs))
+
+------------------------------------------------------------------
+--function #7
+getFreq :: (Eq a, Num b) => a -> [(a,b)] -> b
+getFreq x [] = -1
+getFreq x ((a,b):xs) = if x == a then b
+                                  else getFreq x (xs)
+
+------------------------------------------------------------------
+--function #8				  
+generateOneProb :: Fractional a => ((String,String,String),a) ->[((String,String),a)] -> a						  
+generateOneProb ((a,b,c),d) x = (d/z) where z = getFreq ((a,b)) x;
+                                                          
+------------------------------------------------------------------	
+--function #9	
+genProbPairs :: Fractional a => [((String,String,String),a)] ->[((String,String),a)] -> [((String,String,String),a)]													 
+genProbPairs [] l = []
+genProbPairs (((a,b,c),d):xs) l = ((a,b,c),y):(genProbPairs xs l) where y = (generateOneProb ((a,b,c),d) l)
+
+deleteN _ []     = []
+deleteN i (a:s)
+   | i == 0    = s
+   | otherwise = a : deleteN (i-1) s
+
+------------------------------------------------------------------  
+--function #10
+generateNextWord :: (Ord a, Fractional a) => [String] ->[((String,String,String),a)] -> String
+generateNextWord (x:y:[]) list2	| l==0 =  "Sorry, it is not possible to infer from current database"
+								| l==1 && not(f>0.03 && x==c && y==d)= "Sorry, it is not possible to infer from current database"
+								| f>0.03 && x==c && y==d = e 
+								| otherwise = generateNextWord (x:y:[]) listDeleted
+								where 	{
+										l= length list2;
+										p = randomZeroToX (l-1);
+										((c,d,e),f) = list2!!p;
+										listDeleted = deleteN p list2}
+------------------------------------------------------------------
+--function #11
+generateText :: String -> Int -> String
+generateText l 0 = l
+generateText l x = if (member2 p punct) then if(member2 n punct) then m ++ generateText (n ++ p) (x-1)
+																 else m ++ " " ++ generateText (n ++ p) (x-1)
+										else if(member2 n punct) then m ++ generateText (n ++ " " ++ p) (x-1)
+										     else if(member2 m punct) then m ++ generateText (n ++ " " ++ p) (x-1)
+																	  else m ++ " " ++ generateText (n ++ " " ++ p) (x-1)
+				where	{
+						p = generateNextWord (wordToken l) (genProbPairs (trigramsFreq(wordTokenList (filtering l docs))) (bigramsFreq(wordTokenList (filtering l docs))));		
+						m = wordSplit l;
+						n = wordSplit2 l;
+						}
+k= (trigramsFreq(wordTokenList docs))
+q=(bigramsFreq(wordTokenList docs))
+
+filtering x [] = []
+filtering x (y:ys) = if (isInfixOf x y) then y:(filtering x ys)
+										else (filtering x ys)
+				  
+member2 [] punct = False
+member2 [x] punct= member x punct
+member2(x:xs) punct = False
+
+
+
+
